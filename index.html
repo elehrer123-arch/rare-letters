@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rare Letters — How rare is your name?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0b0b14;
+    --ink: #f4f1ea;
+    --muted: rgba(244, 241, 234, 0.55);
+    --gold: #f5c04e;
+    --violet: #8b7cf6;
+    --teal: #4ed8c4;
+    --rose: #f47ea0;
+    --card: rgba(255, 255, 255, 0.045);
+    --card-border: rgba(255, 255, 255, 0.09);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body { min-height: 100%; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+    overflow-x: hidden;
+  }
+
+  /* soft aurora background */
+  .aurora {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background:
+      radial-gradient(600px 400px at 15% 10%, rgba(139, 124, 246, 0.18), transparent 70%),
+      radial-gradient(700px 500px at 85% 20%, rgba(78, 216, 196, 0.12), transparent 70%),
+      radial-gradient(800px 600px at 50% 110%, rgba(244, 126, 160, 0.10), transparent 70%);
+  }
+
+  main {
+    position: relative;
+    z-index: 1;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 9vh 24px 80px;
+    text-align: center;
+  }
+
+  .eyebrow {
+    font-size: 12px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 18px;
+  }
+
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 800;
+    font-size: clamp(38px, 7vw, 68px);
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+  }
+
+  h1 .shimmer {
+    background: linear-gradient(100deg, var(--gold), var(--rose) 45%, var(--violet) 80%);
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: shimmer 5s ease-in-out infinite;
+  }
+
+  @keyframes shimmer {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  .sub {
+    margin: 18px auto 0;
+    max-width: 480px;
+    color: var(--muted);
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  form {
+    margin: 44px auto 0;
+    display: flex;
+    gap: 10px;
+    max-width: 460px;
+  }
+
+  input[type="text"] {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 16px 20px;
+    font-size: 18px;
+    font-family: inherit;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  input[type="text"]::placeholder { color: rgba(244, 241, 234, 0.3); }
+
+  input[type="text"]:focus {
+    border-color: rgba(139, 124, 246, 0.6);
+    box-shadow: 0 0 0 4px rgba(139, 124, 246, 0.15);
+  }
+
+  button {
+    background: linear-gradient(120deg, var(--violet), var(--rose));
+    border: none;
+    border-radius: 14px;
+    padding: 16px 26px;
+    font-size: 16px;
+    font-weight: 600;
+    font-family: inherit;
+    color: #fff;
+    cursor: pointer;
+    transition: transform 0.15s, filter 0.15s;
+    white-space: nowrap;
+  }
+
+  button:hover { transform: translateY(-1px); filter: brightness(1.1); }
+  button:active { transform: translateY(0); }
+
+  /* ---- results ---- */
+
+  #results { margin-top: 64px; display: none; }
+  #results.show { display: block; }
+
+  .tiles {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 14px;
+    perspective: 900px;
+  }
+
+  .tile {
+    width: 88px;
+    border-radius: 16px;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    padding: 16px 8px 14px;
+    opacity: 0;
+    transform: rotateX(80deg) translateY(16px);
+    animation: flipIn 0.55s cubic-bezier(0.22, 1.2, 0.36, 1) forwards;
+    position: relative;
+  }
+
+  @keyframes flipIn {
+    to { opacity: 1; transform: rotateX(0) translateY(0); }
+  }
+
+  .tile .letter {
+    font-family: 'Fraunces', serif;
+    font-weight: 800;
+    font-size: 40px;
+    line-height: 1;
+  }
+
+  .tile .pct {
+    margin-top: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  .tile .odds {
+    margin-top: 3px;
+    font-size: 11px;
+    color: var(--muted);
+    opacity: 0.8;
+  }
+
+  .tile .slot {
+    position: absolute;
+    top: 6px;
+    right: 9px;
+    font-size: 10px;
+    color: rgba(244, 241, 234, 0.3);
+    font-weight: 600;
+  }
+
+  /* rarity tint tiers */
+  .tile.t-common .letter { color: rgba(244, 241, 234, 0.75); }
+  .tile.t-uncommon .letter { color: var(--teal); }
+  .tile.t-rare .letter { color: var(--violet); }
+  .tile.t-rare { border-color: rgba(139, 124, 246, 0.4); box-shadow: 0 0 24px rgba(139, 124, 246, 0.15); }
+  .tile.t-epic .letter { color: var(--rose); }
+  .tile.t-epic { border-color: rgba(244, 126, 160, 0.45); box-shadow: 0 0 28px rgba(244, 126, 160, 0.18); }
+  .tile.t-legendary .letter { color: var(--gold); }
+  .tile.t-legendary {
+    border-color: rgba(245, 192, 78, 0.55);
+    box-shadow: 0 0 34px rgba(245, 192, 78, 0.22);
+  }
+
+  .tile .crown {
+    position: absolute;
+    top: -16px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 18px;
+    filter: drop-shadow(0 2px 6px rgba(245, 192, 78, 0.6));
+    animation: bob 2.2s ease-in-out infinite;
+  }
+
+  @keyframes bob {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(-4px); }
+  }
+
+  .tile .tierlabel {
+    margin-top: 8px;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .tile.t-legendary .tierlabel { color: var(--gold); }
+  .tile.t-epic .tierlabel { color: var(--rose); }
+  .tile.t-rare .tierlabel { color: var(--violet); }
+  .tile.t-uncommon .tierlabel { color: var(--teal); }
+
+  .verdict {
+    margin: 52px auto 0;
+    max-width: 560px;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 22px;
+    padding: 34px 30px;
+    opacity: 0;
+    animation: rise 0.6s ease 0.3s forwards;
+  }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .verdict .tier {
+    font-family: 'Fraunces', serif;
+    font-weight: 800;
+    font-size: 34px;
+    background: linear-gradient(100deg, var(--gold), var(--rose), var(--violet));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .verdict p {
+    margin-top: 14px;
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.65;
+  }
+
+  .verdict p strong { color: var(--ink); font-weight: 600; }
+
+  .footnote {
+    margin-top: 40px;
+    font-size: 12px;
+    color: rgba(244, 241, 234, 0.35);
+  }
+
+  .again {
+    margin-top: 26px;
+    background: none;
+    border: 1px solid var(--card-border);
+    color: var(--muted);
+    font-size: 14px;
+    padding: 10px 22px;
+  }
+  .again:hover { color: var(--ink); }
+
+  /* confetti sparkles for legendary letters */
+  .spark {
+    position: fixed;
+    z-index: 5;
+    pointer-events: none;
+    font-size: 14px;
+    animation: fall linear forwards;
+  }
+
+  @keyframes fall {
+    to { transform: translateY(110vh) rotate(540deg); opacity: 0.2; }
+  }
+
+  @media (max-width: 520px) {
+    form { flex-direction: column; }
+    .tile { width: 72px; }
+    .tile .letter { font-size: 32px; }
+  }
+</style>
+</head>
+<body>
+<div class="aurora"></div>
+<main>
+  <div class="eyebrow">2020 U.S. Census · First names</div>
+  <h1>How <span class="shimmer">rare</span> are<br>your letters?</h1>
+  <p class="sub">Every letter of your name sits in a slot — first, second, third… Some letters almost never show up where yours do. Let's find your rarest.</p>
+
+  <form id="nameForm" autocomplete="off">
+    <input type="text" id="nameInput" placeholder="Type your first name…" maxlength="24" autofocus>
+    <button type="submit">Reveal ✨</button>
+  </form>
+
+  <section id="results">
+    <div class="tiles" id="tiles"></div>
+    <div class="verdict" id="verdict"></div>
+    <button class="again" id="againBtn" type="button">Try another name</button>
+    <div class="footnote">Percentages: share of Americans in the 2020 Census whose first name has that letter in that position.</div>
+  </section>
+</main>
+
+<script>
+// % of 2020 Census first names with each letter in slots 1–10
+const DATA = {
+  A:[9.13,28.99,9.56,9.65,12.92,8.25,4.83,2.28,0.72,0.12],
+  B:[4.53,0.35,3.20,1.28,0.63,0.48,0.01,0.00,0.00,0.00],
+  C:[7.35,0.36,5.56,2.41,1.27,1.53,0.54,0.22,0.01,0.00],
+  D:[6.64,1.24,2.94,3.41,2.64,1.96,1.64,0.22,0.02,0.00],
+  E:[4.45,13.03,6.25,11.60,12.39,8.76,3.69,1.94,1.42,0.74],
+  F:[1.24,0.04,0.79,0.71,0.17,0.52,0.01,0.00,0.00,0.00],
+  G:[2.90,0.08,1.63,1.77,0.59,0.13,0.12,0.04,0.00,0.00],
+  H:[2.06,5.49,2.19,6.09,2.78,2.28,1.01,0.31,1.01,0.00],
+  I:[1.07,10.92,6.72,11.85,8.77,3.74,2.76,0.64,0.08,0.01],
+  J:[12.63,0.02,0.12,0.53,0.05,0.03,0.01,0.00,0.00,0.00],
+  K:[5.39,0.11,0.73,1.56,0.65,0.09,0.29,0.08,0.06,0.00],
+  L:[5.29,4.87,7.56,6.83,5.94,4.16,3.77,0.36,0.09,0.01],
+  M:[9.74,1.66,4.75,2.13,0.73,0.47,0.89,0.04,0.01,0.00],
+  N:[2.53,2.87,11.15,10.05,8.71,8.59,4.61,2.05,0.55,0.06],
+  O:[0.69,12.61,2.53,4.10,3.86,1.97,1.61,0.39,0.29,0.02],
+  P:[2.66,0.14,0.31,0.71,0.68,0.11,0.16,0.58,0.00,0.00],
+  Q:[0.10,0.00,0.07,0.23,0.07,0.01,0.03,0.00,0.00,0.00],
+  R:[6.20,6.68,14.27,7.41,5.13,4.56,0.66,0.88,0.26,0.04],
+  S:[6.90,1.21,5.81,3.26,5.20,2.36,1.23,0.41,0.05,0.02],
+  T:[4.24,1.50,4.91,4.61,3.30,3.94,0.88,0.99,0.08,0.01],
+  U:[0.06,4.60,2.05,1.11,0.92,0.21,0.14,0.07,0.01,0.00],
+  V:[1.34,0.74,2.42,1.35,0.11,0.08,0.01,0.02,0.00,0.00],
+  W:[1.71,0.18,0.71,0.26,0.02,0.45,0.48,0.01,0.00,0.00],
+  X:[0.12,0.02,0.31,0.69,0.04,0.02,0.01,0.00,0.00,0.00],
+  Y:[0.49,2.15,2.94,2.71,5.06,2.42,2.62,0.69,0.02,0.00],
+  Z:[0.54,0.11,0.34,0.59,0.06,0.13,0.09,0.02,0.01,0.00],
+};
+
+const ORDINALS = ['1st','2nd','3rd','4th','5th','6th','7th','8th','9th','10th'];
+
+function tierFor(pct) {
+  if (pct === null || pct < 0.1) return 'legendary';
+  if (pct < 0.5) return 'epic';
+  if (pct < 2) return 'rare';
+  if (pct < 6) return 'uncommon';
+  return 'common';
+}
+
+const TIER_LABELS = {
+  legendary: 'Legendary', epic: 'Epic', rare: 'Rare',
+  uncommon: 'Uncommon', common: 'Classic',
+};
+
+function oddsText(pct) {
+  if (pct === null) return 'off the charts';
+  if (pct === 0) return '< 1 in 20,000';
+  const n = Math.round(100 / pct);
+  return '1 in ' + n.toLocaleString();
+}
+
+function pctText(pct) {
+  if (pct === null) return '???';
+  if (pct === 0) return '<0.01%';
+  return pct + '%';
+}
+
+function analyze(name) {
+  const letters = name.toUpperCase().split('');
+  return letters.map((ch, i) => {
+    const row = DATA[ch];
+    // beyond slot 10 or a non A–Z character: no census data — treat as off the charts
+    const pct = (row && i < 10) ? row[i] : null;
+    return { ch, slot: i, pct, tier: tierFor(pct) };
+  });
+}
+
+const form = document.getElementById('nameForm');
+const input = document.getElementById('nameInput');
+const results = document.getElementById('results');
+const tilesEl = document.getElementById('tiles');
+const verdictEl = document.getElementById('verdict');
+const againBtn = document.getElementById('againBtn');
+
+form.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const raw = input.value.trim().replace(/[^a-zA-Z''\-]/g, '');
+  if (!raw) return;
+  render(raw);
+});
+
+againBtn.addEventListener('click', () => {
+  results.classList.remove('show');
+  input.value = '';
+  input.focus();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+function render(name) {
+  const parts = analyze(name);
+
+  tilesEl.innerHTML = '';
+  const rarest = parts.reduce((a, b) => {
+    const av = a.pct === null ? -1 : a.pct;
+    const bv = b.pct === null ? -1 : b.pct;
+    return bv < av ? b : a;
+  });
+
+  parts.forEach((p, i) => {
+    const el = document.createElement('div');
+    el.className = 'tile t-' + p.tier;
+    el.style.animationDelay = (i * 0.09) + 's';
+    el.innerHTML =
+      (p === rarest ? '<div class="crown">👑</div>' : '') +
+      '<div class="slot">' + (ORDINALS[p.slot] || (p.slot + 1) + 'th') + '</div>' +
+      '<div class="letter">' + p.ch + '</div>' +
+      '<div class="pct">' + pctText(p.pct) + '</div>' +
+      '<div class="odds">' + oddsText(p.pct) + '</div>' +
+      '<div class="tierlabel">' + TIER_LABELS[p.tier] + '</div>';
+    tilesEl.appendChild(el);
+  });
+
+  // overall score: geometric mean of per-slot shares (nulls/zeros count as 0.005%)
+  const probs = parts.map(p => Math.max((p.pct === null ? 0 : p.pct), 0.005) / 100);
+  const geo = Math.exp(probs.reduce((s, v) => s + Math.log(v), 0) / probs.length);
+  const geoPct = geo * 100;
+
+  let overallTier, line;
+  const displayName = name[0].toUpperCase() + name.slice(1).toLowerCase();
+  if (geoPct < 0.5) {
+    overallTier = '🌟 Legendary Letters';
+    line = 'Your letters land in slots almost nobody else\'s do. <strong>' + displayName + '</strong>, you are statistically one of a kind.';
+  } else if (geoPct < 2) {
+    overallTier = '💎 Seriously Rare';
+    line = '<strong>' + displayName + '</strong>, your letters take the road less traveled. Most people\'s names don\'t dare.';
+  } else if (geoPct < 6) {
+    overallTier = '🔮 Delightfully Uncommon';
+    line = '<strong>' + displayName + '</strong>, you\'ve got a few letters sitting in genuinely unusual spots. Wear them proudly.';
+  } else {
+    overallTier = '✨ Timeless Classic';
+    line = '<strong>' + displayName + '</strong>, your letters sit in beloved, well-worn slots — the comfort food of names. Iconic, honestly.';
+  }
+
+  const crownNote = 'Your rarest letter is <strong>' + rarest.ch + '</strong> in the ' +
+    (ORDINALS[rarest.slot] || (rarest.slot + 1) + 'th') + ' slot — ' +
+    (rarest.pct === null
+      ? 'so rare it\'s literally off the census charts.'
+      : 'only <strong>' + pctText(rarest.pct) + '</strong> of Americans have that (' + oddsText(rarest.pct) + ').');
+
+  verdictEl.innerHTML =
+    '<div class="tier">' + overallTier + '</div>' +
+    '<p>' + crownNote + '</p>' +
+    '<p>' + line + '</p>';
+
+  results.classList.add('show');
+  verdictEl.style.animation = 'none';
+  void verdictEl.offsetWidth; // restart animation
+  verdictEl.style.animation = '';
+
+  // sparkle confetti if any letter is epic or better
+  if (parts.some(p => p.tier === 'legendary' || p.tier === 'epic')) {
+    sprinkle();
+  }
+
+  results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function sprinkle() {
+  const glyphs = ['✨', '⭐', '💫', '🌟'];
+  for (let i = 0; i < 24; i++) {
+    const s = document.createElement('div');
+    s.className = 'spark';
+    s.textContent = glyphs[Math.floor(Math.random() * glyphs.length)];
+    s.style.left = Math.random() * 100 + 'vw';
+    s.style.top = '-30px';
+    s.style.animationDuration = (2.2 + Math.random() * 2.5) + 's';
+    s.style.animationDelay = (Math.random() * 0.8) + 's';
+    document.body.appendChild(s);
+    setTimeout(() => s.remove(), 6000);
+  }
+}
+</script>
+</body>
+</html>
