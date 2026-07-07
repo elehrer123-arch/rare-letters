@@ -285,6 +285,13 @@
   }
   .again:hover { color: var(--ink); }
 
+  .share {
+    margin-top: 24px;
+    background: linear-gradient(120deg, var(--gold), var(--rose));
+    font-size: 15px;
+    padding: 13px 26px;
+  }
+
   /* confetti sparkles for legendary letters */
   .spark {
     position: fixed;
@@ -320,6 +327,7 @@
   <section id="results">
     <div class="tiles" id="tiles"></div>
     <div class="verdict" id="verdict"></div>
+    <button class="share" id="shareBtn" type="button">Copy your link ✨</button>
     <button class="again" id="againBtn" type="button">Try another name</button>
     <div class="footnote">Percentages: share of Americans in the 2020 Census whose first name has that letter in that position.</div>
   </section>
@@ -400,10 +408,34 @@ const results = document.getElementById('results');
 const tilesEl = document.getElementById('tiles');
 const verdictEl = document.getElementById('verdict');
 const againBtn = document.getElementById('againBtn');
+const shareBtn = document.getElementById('shareBtn');
+
+// base path of the app: "/rare-letters/" on GitHub Pages, "/" locally
+const BASE = location.pathname.toLowerCase().startsWith('/rare-letters')
+  ? '/rare-letters/' : '/';
+
+function cleanName(s) {
+  return (s || '').trim().replace(/[^a-zA-Z'\-]/g, '').slice(0, 24);
+}
+
+// name arriving via shared link: ?name=neil (404.html redirect) or /neil (pretty path)
+function nameFromURL() {
+  const q = new URLSearchParams(location.search).get('name');
+  if (q) return cleanName(q);
+  const rest = location.pathname.slice(BASE.length).replace(/\/+$/, '');
+  if (rest && !rest.includes('/') && !rest.includes('.')) {
+    return cleanName(decodeURIComponent(rest));
+  }
+  return '';
+}
+
+function setURLForName(name) {
+  history.replaceState(null, '', BASE + encodeURIComponent(name.toLowerCase()));
+}
 
 form.addEventListener('submit', (e) => {
   e.preventDefault();
-  const raw = input.value.trim().replace(/[^a-zA-Z''\-]/g, '');
+  const raw = cleanName(input.value);
   if (!raw) return;
   render(raw);
 });
@@ -412,11 +444,31 @@ againBtn.addEventListener('click', () => {
   results.classList.remove('show');
   input.value = '';
   input.focus();
+  history.replaceState(null, '', BASE);
+  document.title = 'Rare Letters — How rare is your name?';
   window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+shareBtn.addEventListener('click', async () => {
+  const url = location.href;
+  try {
+    await navigator.clipboard.writeText(url);
+  } catch (e) {
+    // clipboard API unavailable (e.g. non-HTTPS): fall back to a prompt
+    window.prompt('Copy your link:', url);
+    return;
+  }
+  const original = shareBtn.textContent;
+  shareBtn.textContent = 'Copied! Send it 💌';
+  setTimeout(() => { shareBtn.textContent = original; }, 2200);
 });
 
 function render(name) {
   const parts = analyze(name);
+  const pretty = name[0].toUpperCase() + name.slice(1).toLowerCase();
+  input.value = pretty;
+  setURLForName(name);
+  document.title = 'How rare are ' + pretty + '’s letters?';
 
   tilesEl.innerHTML = '';
   const rarest = parts.reduce((a, b) => {
@@ -445,7 +497,7 @@ function render(name) {
   const geoPct = geo * 100;
 
   let overallTier, line;
-  const displayName = name[0].toUpperCase() + name.slice(1).toLowerCase();
+  const displayName = pretty;
   if (geoPct < 0.5) {
     overallTier = '🌟 Legendary Letters';
     line = 'Your letters land in slots almost nobody else\'s do. <strong>' + displayName + '</strong>, you are statistically one of a kind.';
@@ -482,6 +534,12 @@ function render(name) {
   }
 
   results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// arriving via a shared link: reveal that name right away
+const sharedName = nameFromURL();
+if (sharedName) {
+  render(sharedName);
 }
 
 function sprinkle() {

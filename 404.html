@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Rare Letters</title>
+<script>
+// GitHub Pages serves this for any unknown path, e.g. /rare-letters/neil.
+// Hand the name to the app via ?name=, which rewrites the URL back to /neil.
+(function () {
+  var base = location.pathname.toLowerCase().indexOf('/rare-letters') === 0
+    ? '/rare-letters/' : '/';
+  var rest = location.pathname.slice(base.length).replace(/\/+$/, '');
+  var target = base + (rest && rest.indexOf('/') === -1
+    ? '?name=' + encodeURIComponent(decodeURIComponent(rest)) : '');
+  location.replace(target);
+})();
+</script>
+</head>
+<body></body>
+</html>
